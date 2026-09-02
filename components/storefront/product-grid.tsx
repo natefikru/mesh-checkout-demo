@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { CATALOG } from '@/lib/catalog'
 import { useCart } from '@/components/storefront/cart-context'
 
@@ -14,8 +15,14 @@ export function ProductGrid() {
         const inCart = isInCart(product.id)
         return (
           <div key={product.id} className="flex flex-col bg-white p-5">
-            <div className="mb-4 flex aspect-square items-center justify-center bg-[#f4f4f5] font-mono text-[10px] uppercase tracking-[0.14em] text-[#a1a1aa]">
-              {product.name}
+            <div className="relative mb-4 aspect-square overflow-hidden bg-[#f4f4f5]">
+              <Image
+                src={product.image}
+                alt={`${product.name} sneaker`}
+                fill
+                sizes="(min-width: 640px) 33vw, 50vw"
+                className="object-contain p-6"
+              />
             </div>
             <h3 className="font-display text-lg leading-tight">{product.name}</h3>
             <p className="text-sm text-[#71717a]">{product.colorway}</p>
