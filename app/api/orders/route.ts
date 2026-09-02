@@ -5,6 +5,7 @@ import { getConnection } from '@/lib/store/connections'
 import { createOrder } from '@/lib/store/orders'
 import type { Order } from '@/lib/store/orders'
 import { getProduct } from '@/lib/catalog'
+import type { Product } from '@/lib/catalog'
 import { readPortfolio, usdcBalance } from '@/lib/mesh/portfolio'
 import { resolveCoinbaseIntegrationId } from '@/lib/mesh/integrations'
 import { verifyTransfer } from '@/lib/mesh/verify'
@@ -13,11 +14,13 @@ import { ETHEREUM_NETWORK_ID, TEST_WALLET_ADDRESS, USDC_SYMBOL } from '@/lib/mes
 import type { GetLinkTokenRequest, GetLinkTokenResponseContent } from '@/lib/mesh/types'
 
 interface CheckoutRequestBody {
-  productId: string
+  productIds: string[]
 }
 
 function isCheckoutRequestBody(value: unknown): value is CheckoutRequestBody {
-  return typeof value === 'object' && value !== null && typeof (value as Record<string, unknown>).productId === 'string'
+  if (typeof value !== 'object' || value === null) return false
+  const productIds = (value as Record<string, unknown>).productIds
+  return Array.isArray(productIds) && productIds.length > 0 && productIds.every((id) => typeof id === 'string')
 }
 
 /**
@@ -30,13 +33,14 @@ export async function POST(req: Request) {
   const payload: unknown = await req.json()
 
   if (!isCheckoutRequestBody(payload)) {
-    return NextResponse.json({ error: 'Missing productId' }, { status: 400 })
+    return NextResponse.json({ error: 'Missing productIds' }, { status: 400 })
   }
 
-  const product = getProduct(payload.productId)
-  if (!product) {
+  const items = payload.productIds.map(getProduct).filter((p): p is Product => p !== undefined)
+  if (items.length !== payload.productIds.length) {
     return NextResponse.json({ error: 'Unknown product' }, { status: 404 })
   }
+  const total = items.reduce((sum, p) => sum + p.price, 0)
 
   const connection = await getConnection(sessionId)
   if (!connection) {
@@ -46,11 +50,8 @@ export async function POST(req: Request) {
   try {
     const portfolio = await readPortfolio(connection, sessionId)
     const balance = usdcBalance(portfolio)
-    if (balance < product.price) {
-      return NextResponse.json(
-        { error: `Insufficient USDC balance: have ${balance}, need ${product.price}` },
-        { status: 400 },
-      )
+    if (balance < total) {
+      return NextResponse.json({ error: `Insufficient USDC balance: have ${balance}, need ${total}` }, { status: 400 })
     }
 
     const integrationId = await resolveCoinbaseIntegrationId(sessionId)
@@ -66,9 +67,8 @@ export async function POST(req: Request) {
     const order: Order = {
       id: randomUUID(),
       sessionId,
-      productId: product.id,
-      productName: product.name,
-      amountUsd: product.price,
+      items: items.map((p) => ({ productId: p.id, productName: p.name, price: p.price })),
+      amountUsd: total,
       status: 'created',
       txHash: null,
       createdAt: Date.now(),
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
       transferOptions: {
         transactionId: order.id,
         transferType: 'payment',
-        toAddresses: [{ networkId: ETHEREUM_NETWORK_ID, symbol: USDC_SYMBOL, address: TEST_WALLET_ADDRESS, amount: product.price }],
+        toAddresses: [{ networkId: ETHEREUM_NETWORK_ID, symbol: USDC_SYMBOL, address: TEST_WALLET_ADDRESS, amount: total }],
       },
     }
 

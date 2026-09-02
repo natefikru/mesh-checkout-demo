@@ -3,8 +3,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { createLink } from '@meshconnect/web-link-sdk'
 import type { Link, SessionSummary, TransferFinishedPayload } from '@meshconnect/web-link-sdk'
-import type { Product } from '@/lib/catalog'
-import { OrderStatusBadge } from '@/components/storefront/order-status'
+import { useCart } from '@/components/storefront/cart-context'
 
 async function postConsoleEvent(kind: string, label: string, detail?: unknown, ok?: boolean) {
   await fetch('/api/console', {
@@ -16,10 +15,15 @@ async function postConsoleEvent(kind: string, label: string, detail?: unknown, o
   })
 }
 
-export function CheckoutButton({ product }: { product: Product }) {
+interface CartCheckoutButtonProps {
+  disabled: boolean
+  onOrderCreated: (orderId: string) => void
+}
+
+export function CartCheckoutButton({ disabled, onOrderCreated }: CartCheckoutButtonProps) {
+  const { productIds } = useCart()
   const linkRef = useRef<Link | null>(null)
   const [busy, setBusy] = useState(false)
-  const [orderId, setOrderId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const openLinkFor = useCallback((oid: string, linkToken: string) => {
@@ -28,9 +32,9 @@ export function CheckoutButton({ product }: { product: Product }) {
       theme: 'system',
       displayFiatCurrency: 'USD',
 
-      // The payment flow re-authenticates against Coinbase itself (the take-home
-      // spec calls for its own MFA step here); this app already has a saved
-      // connection from earlier, so a fresh one here is only logged, not stored.
+      // The payment flow re-authenticates against Coinbase itself; this app
+      // already has a saved connection from earlier, so a fresh one here is
+      // only logged, not stored.
       onIntegrationConnected: (payload) => {
         void postConsoleEvent('sdk_event', 'onIntegrationConnected (checkout)', payload, true)
       },
@@ -65,7 +69,7 @@ export function CheckoutButton({ product }: { product: Product }) {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: product.id }),
+        body: JSON.stringify({ productIds }),
       })
       const data = (await res.json()) as { orderId?: string; linkToken?: string; error?: string }
       if (!res.ok || !data.orderId || !data.linkToken) {
@@ -73,25 +77,24 @@ export function CheckoutButton({ product }: { product: Product }) {
         setBusy(false)
         return
       }
-      setOrderId(data.orderId)
+      onOrderCreated(data.orderId)
       openLinkFor(data.orderId, data.linkToken)
     } catch {
       setError('Could not reach the server')
       setBusy(false)
     }
-  }, [product.id, openLinkFor])
+  }, [productIds, openLinkFor, onOrderCreated])
 
   return (
     <div className="space-y-1">
       <button
         onClick={checkout}
-        disabled={busy}
-        className="rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-gray-700 disabled:opacity-40"
+        disabled={busy || disabled}
+        className="w-full rounded-md bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-40"
       >
-        {busy ? 'Opening…' : 'Buy'}
+        {busy ? 'Opening…' : 'Pay with Coinbase'}
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
-      {orderId && <OrderStatusBadge orderId={orderId} />}
     </div>
   )
 }

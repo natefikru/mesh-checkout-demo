@@ -2,11 +2,16 @@ import { redis } from '@/lib/store/redis'
 
 export type OrderStatus = 'created' | 'pending' | 'paid' | 'failed'
 
+export interface OrderItem {
+  productId: string
+  productName: string
+  price: number
+}
+
 export interface Order {
   id: string
   sessionId: string
-  productId: string
-  productName: string
+  items: OrderItem[]
   amountUsd: number
   status: OrderStatus
   txHash: string | null

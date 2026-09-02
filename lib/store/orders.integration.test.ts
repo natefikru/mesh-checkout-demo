@@ -11,8 +11,7 @@ function freshOrder(): Order {
   return {
     id: randomUUID(),
     sessionId: 'test-session',
-    productId: 'field-runner',
-    productName: 'Field Runner',
+    items: [{ productId: 'field-runner', productName: 'Field Runner', price: 50 }],
     amountUsd: 50,
     status: 'created',
     txHash: null,
