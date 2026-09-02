@@ -11,12 +11,19 @@ interface StoredConnection {
 }
 
 export function WalletPanel({ initialConnection }: { initialConnection: StoredConnection | null }) {
-  const { connected, refreshKey, markConnected } = useConnection()
+  const { connected, refreshKey, markConnected, markDisconnected } = useConnection()
   const [expanded, setExpanded] = useState(false)
 
   return (
     <div className="relative flex items-center gap-3">
-      <ConnectCoinbaseButton initialConnection={initialConnection} onConnected={markConnected} />
+      <ConnectCoinbaseButton
+        initialConnection={initialConnection}
+        onConnected={markConnected}
+        onDisconnected={() => {
+          markDisconnected()
+          setExpanded(false)
+        }}
+      />
       {connected && (
         <button
           type="button"

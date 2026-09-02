@@ -6,6 +6,7 @@ interface ConnectionState {
   connected: boolean
   refreshKey: number
   markConnected: () => void
+  markDisconnected: () => void
 }
 
 const ConnectionContext = createContext<ConnectionState | null>(null)
@@ -20,7 +21,11 @@ export function ConnectionProvider({ initialConnected, children }: { initialConn
     setRefreshKey((k) => k + 1)
   }, [])
 
-  return <ConnectionContext.Provider value={{ connected, refreshKey, markConnected }}>{children}</ConnectionContext.Provider>
+  const markDisconnected = useCallback(() => setConnected(false), [])
+
+  return (
+    <ConnectionContext.Provider value={{ connected, refreshKey, markConnected, markDisconnected }}>{children}</ConnectionContext.Provider>
+  )
 }
 
 export function useConnection(): ConnectionState {

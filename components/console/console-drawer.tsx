@@ -62,7 +62,7 @@ export function ConsoleDrawer() {
       </button>
 
       {open && (
-        <div className="h-64 overflow-y-auto border-t border-gray-800 font-mono text-xs">
+        <div className="max-h-64 overflow-y-auto border-t border-gray-800 font-mono text-xs">
           {events.length === 0 ? (
             <p className="px-4 py-3 text-gray-500">No activity yet.</p>
           ) : (

@@ -49,4 +49,26 @@ describe.skipIf(!hasCredentials)('updateOrderStatus against live Redis', () => {
   it('returns null for an order that does not exist', async () => {
     expect(await updateOrderStatus(randomUUID(), 'paid')).toBeNull()
   })
+
+  it('never splits status and txHash under real concurrency, the exact bug a plain read-then-write would allow', async () => {
+    // Two competing terminal updates fired with no await between them, so
+    // both requests read the order in its pre-update 'created' state before
+    // either write lands. A non-atomic read-modify-write would let both
+    // "win" independently, producing a persisted record whose status came
+    // from one writer and whose txHash came from the other. Repeated across
+    // fresh orders since a single run can get lucky and happen to serialize.
+    for (let i = 0; i < 10; i++) {
+      const order = freshOrder()
+      await createOrder(order)
+
+      await Promise.all([
+        updateOrderStatus(order.id, 'paid', { txHash: '0xpaid-winner' }),
+        updateOrderStatus(order.id, 'failed', { txHash: '0xfailed-winner' }),
+      ])
+
+      const persisted = await getOrder(order.id)
+      expect(['paid', 'failed']).toContain(persisted?.status)
+      expect(persisted?.txHash).toBe(persisted?.status === 'paid' ? '0xpaid-winner' : '0xfailed-winner')
+    }
+  })
 })

@@ -22,13 +22,16 @@ async function postConsoleEvent(kind: string, label: string, detail?: unknown, o
 export function ConnectCoinbaseButton({
   initialConnection,
   onConnected,
+  onDisconnected,
 }: {
   initialConnection: StoredConnection | null
   onConnected?: (connection: StoredConnection) => void
+  onDisconnected?: () => void
 }) {
   const linkRef = useRef<Link | null>(null)
   const [busy, setBusy] = useState(false)
   const [connection, setConnection] = useState<StoredConnection | null>(initialConnection)
+  const [disconnecting, setDisconnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -102,6 +105,18 @@ export function ConnectCoinbaseButton({
     }
   }, [])
 
+  const disconnect = useCallback(async () => {
+    setDisconnecting(true)
+    try {
+      await fetch('/api/mesh/connections', { method: 'DELETE' })
+      void postConsoleEvent('sdk_event', 'Disconnected Coinbase', undefined, true)
+      setConnection(null)
+      onDisconnected?.()
+    } finally {
+      setDisconnecting(false)
+    }
+  }, [onDisconnected])
+
   if (connection) {
     return (
       <div className="flex items-center gap-2 text-sm">
@@ -109,6 +124,14 @@ export function ConnectCoinbaseButton({
         <span>
           {connection.brokerName} connected · {connection.accountName}
         </span>
+        <button
+          type="button"
+          onClick={disconnect}
+          disabled={disconnecting}
+          className="text-xs text-gray-500 underline underline-offset-2 hover:text-gray-900 disabled:opacity-50"
+        >
+          {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+        </button>
       </div>
     )
   }
