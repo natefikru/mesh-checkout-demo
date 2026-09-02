@@ -31,9 +31,11 @@ export async function appendConsoleEvent(input: AppendEventInput): Promise<Conso
     ok: input.ok,
   }
 
+  // The SDK auto-serializes/deserializes objects; pass the event directly
+  // rather than JSON.stringify-ing it, which would double-encode.
   const k = key(input.sessionId)
   const client = redis()
-  await client.rpush(k, JSON.stringify(event))
+  await client.rpush(k, event)
   await client.ltrim(k, -MAX_EVENTS_PER_SESSION, -1)
   await client.expire(k, TTL_SECONDS)
 
@@ -41,8 +43,7 @@ export async function appendConsoleEvent(input: AppendEventInput): Promise<Conso
 }
 
 export async function listConsoleEvents(sessionId: string, sinceId?: string): Promise<ConsoleEvent[]> {
-  const raw = await redis().lrange<string>(key(sessionId), 0, -1)
-  const events = raw.map((entry) => (typeof entry === 'string' ? (JSON.parse(entry) as ConsoleEvent) : (entry as ConsoleEvent)))
+  const events = await redis().lrange<ConsoleEvent>(key(sessionId), 0, -1)
   if (!sinceId) return events
 
   const cursor = events.findIndex((e) => e.id === sinceId)
