@@ -47,6 +47,12 @@ export async function updateOrderStatus(
   const order = await getOrder(orderId)
   if (!order) return null
 
+  // A terminal order is fully frozen, not just its status field. Applying
+  // patch fields (like txHash) even when the status is absorbed would let a
+  // later, weaker signal corrupt data recorded by the stronger one that
+  // already settled it.
+  if (TERMINAL_STATUSES.includes(order.status)) return order
+
   const status = nextOrderStatus(order.status, incoming)
   const updated: Order = { ...order, ...patch, status, updatedAt: Date.now() }
   await redis().set(key(orderId), updated)

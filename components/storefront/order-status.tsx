@@ -53,7 +53,19 @@ export function OrderStatusBadge({ orderId }: { orderId: string }) {
   return (
     <p className={`text-xs ${color}`}>
       {LABEL[order.status]}
-      {order.status === 'paid' && order.txHash && <span className="ml-1 font-mono">{order.txHash.slice(0, 10)}…</span>}
+      {order.status === 'paid' && order.txHash && (
+        <>
+          {' · '}
+          <a
+            href={`https://etherscan.io/tx/${order.txHash}`}
+            target="_blank"
+            rel="noreferrer"
+            className="font-mono underline underline-offset-2"
+          >
+            {order.txHash.slice(0, 10)}…
+          </a>
+        </>
+      )}
     </p>
   )
 }
