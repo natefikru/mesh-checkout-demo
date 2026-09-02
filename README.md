@@ -3,7 +3,6 @@
 A sneaker storefront that connects Coinbase through [Mesh Connect](https://meshconnect.com), reads the account's live portfolio, and settles a cart in USDC over Ethereum — built for the Mesh Connect Customer Success / Corp Sec take-home.
 
 **Live:** https://mesh-checkout-demo.vercel.app
-**Take-home brief and presentation notes:** [`docs/`](./docs)
 
 ## What this demonstrates
 
@@ -18,8 +17,6 @@ The take-home's seven requirements, and where each one lives in the code:
 | 5 | Pay in USDC over Ethereum via Link UI | `components/storefront/cart-checkout-button.tsx`, `app/api/orders/route.ts` |
 | 6 | Read portfolio via accessToken | `app/api/mesh/portfolio/route.ts`, `lib/mesh/portfolio.ts` |
 | 7 | Bonus creativity | Cart with balance-aware checkout, live console drawer, return-user reconnect, atomic settlement — see below |
-
-`docs/PRESENTATION.md` walks through all of this in narrative form, mapped to what to actually say on the call.
 
 ## Architecture, briefly
 
