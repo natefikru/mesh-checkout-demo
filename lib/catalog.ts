@@ -13,6 +13,7 @@ export const CATALOG: Product[] = [
   { id: 'low-court', name: 'Low Court', colorway: 'Chalk / Pine', price: 65, image: '/products/low-court.png' },
   { id: 'trail-mid', name: 'Trail Mid', colorway: 'Rust / Bark', price: 120, image: '/products/trail-mid.png' },
   { id: 'summit-hi', name: 'Summit Hi', colorway: 'Slate / Ice', price: 145, image: '/products/summit-hi.png' },
+  { id: 'court-classic', name: 'Court Classic', colorway: 'Iris / Chalk', price: 110, image: '/products/court-classic.png' },
 ]
 
 export function getProduct(id: string): Product | undefined {
