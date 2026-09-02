@@ -125,7 +125,16 @@ export type TransferVerifyFailureReason =
   | 'invalidAddressFormat'
   | 'notSupportedOnToken'
 
+/** Live shape confirmed 2026-09-02: {status, errorMessage} on success, plus failureReason on failure. */
 export interface TransferVerifyResponseContent {
-  isValid: boolean
-  failureReason: TransferVerifyFailureReason | null
+  status: 'succeeded' | 'failed'
+  errorMessage: string | null
+  failureReason?: TransferVerifyFailureReason
+}
+
+export interface TransferVerificationRequest {
+  integrationId: string
+  token: string
+  networkId: string
+  targetAddress: string
 }

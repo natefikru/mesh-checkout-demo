@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { ConnectCoinbaseButton } from '@/components/storefront/connect-coinbase-loader'
 import { PortfolioPanel } from '@/components/storefront/portfolio-panel'
+import { useConnection } from '@/components/storefront/connection-context'
 
 interface StoredConnection {
   brokerName: string
@@ -10,19 +11,18 @@ interface StoredConnection {
 }
 
 export function WalletPanel({ initialConnection }: { initialConnection: StoredConnection | null }) {
-  const [connected, setConnected] = useState(initialConnection !== null)
-  const [refreshKey, setRefreshKey] = useState(0)
+  const { connected, refreshKey, markConnected } = useConnection()
   const [expanded, setExpanded] = useState(false)
-
-  const handleConnected = useCallback(() => {
-    setConnected(true)
-    setRefreshKey((k) => k + 1)
-    setExpanded(true)
-  }, [])
 
   return (
     <div className="relative flex items-center gap-3">
-      <ConnectCoinbaseButton initialConnection={initialConnection} onConnected={handleConnected} />
+      <ConnectCoinbaseButton
+        initialConnection={initialConnection}
+        onConnected={() => {
+          markConnected()
+          setExpanded(true)
+        }}
+      />
       {connected && (
         <button
           type="button"

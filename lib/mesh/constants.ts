@@ -6,3 +6,6 @@ export const USDC_SYMBOL = 'USDC'
 /** brokerType as returned by onIntegrationConnected / the integrations catalog. */
 export const SANDBOX_COINBASE_BROKER_TYPE = 'sandboxCoinbase'
 export const PRODUCTION_COINBASE_BROKER_TYPE = 'coinbase'
+
+/** Fixed destination address from the take-home spec. */
+export const TEST_WALLET_ADDRESS = '0x0Ff0000f0A0f0000F0F000000000ffFf00f0F0f0'
