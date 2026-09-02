@@ -16,13 +16,7 @@ export function WalletPanel({ initialConnection }: { initialConnection: StoredCo
 
   return (
     <div className="relative flex items-center gap-3">
-      <ConnectCoinbaseButton
-        initialConnection={initialConnection}
-        onConnected={() => {
-          markConnected()
-          setExpanded(true)
-        }}
-      />
+      <ConnectCoinbaseButton initialConnection={initialConnection} onConnected={markConnected} />
       {connected && (
         <button
           type="button"
