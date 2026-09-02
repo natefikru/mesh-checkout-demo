@@ -114,11 +114,11 @@ export function ConnectCoinbaseButton({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="flex items-center gap-3">
       <button
         onClick={open}
         disabled={busy}
-        className="rounded-none border border-current/20 px-5 py-2.5 text-sm font-medium transition hover:border-current/40 disabled:opacity-50"
+        className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50"
       >
         {busy ? 'Opening Mesh Link…' : 'Connect Coinbase'}
       </button>
