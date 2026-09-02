@@ -4,11 +4,7 @@ import { useState } from 'react'
 import { ConnectCoinbaseButton } from '@/components/storefront/connect-coinbase-loader'
 import { PortfolioPanel } from '@/components/storefront/portfolio-panel'
 import { useConnection } from '@/components/storefront/connection-context'
-
-interface StoredConnection {
-  brokerName: string
-  accountName: string
-}
+import type { StoredConnection } from '@/lib/store/connections'
 
 export function WalletPanel({ initialConnection }: { initialConnection: StoredConnection | null }) {
   const { connected, refreshKey, markConnected, markDisconnected } = useConnection()
@@ -28,13 +24,13 @@ export function WalletPanel({ initialConnection }: { initialConnection: StoredCo
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="text-xs text-gray-500 underline underline-offset-2"
+          className="text-xs text-[#71717a] underline underline-offset-2 hover:text-[#14161a]"
         >
           {expanded ? 'Hide portfolio' : 'Show portfolio'}
         </button>
       )}
       {connected && expanded && (
-        <div className="absolute right-0 top-full z-10 mt-3 w-72 border border-gray-200 bg-white p-4 shadow-lg">
+        <div className="absolute right-0 top-full z-10 mt-3 w-72 rounded-lg border border-[#e4e4e7] bg-white p-4 shadow-lg">
           <PortfolioPanel connected={connected} refreshKey={refreshKey} />
         </div>
       )}

@@ -2,8 +2,9 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { createLink } from '@meshconnect/web-link-sdk'
-import type { Link, SessionSummary, TransferFinishedPayload } from '@meshconnect/web-link-sdk'
+import type { IntegrationAccessToken, Link, SessionSummary, TransferFinishedPayload } from '@meshconnect/web-link-sdk'
 import { useCart } from '@/components/storefront/cart-context'
+import { useConnection } from '@/components/storefront/connection-context'
 
 async function postConsoleEvent(kind: string, label: string, detail?: unknown, ok?: boolean) {
   await fetch('/api/console', {
@@ -22,45 +23,68 @@ interface CartCheckoutButtonProps {
 
 export function CartCheckoutButton({ disabled, onOrderCreated }: CartCheckoutButtonProps) {
   const { productIds } = useCart()
+  const { connection } = useConnection()
   const linkRef = useRef<Link | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const openLinkFor = useCallback((oid: string, linkToken: string) => {
-    linkRef.current = createLink({
-      renderType: 'overlay',
-      theme: 'system',
-      displayFiatCurrency: 'USD',
+  const openLinkFor = useCallback(
+    (oid: string, linkToken: string) => {
+      // Reuse the stored connection's tokenId through Link's accessTokens,
+      // Mesh's documented return-user pattern: Link recognizes the account
+      // and skips straight to asset selection instead of asking the shopper
+      // to log into Coinbase and grant permissions again for a payment
+      // they've already connected an account for.
+      const accessTokens: IntegrationAccessToken[] | undefined = connection
+        ? [
+            {
+              accessToken: connection.tokenId,
+              // StoredConnection widens this to `string` at the storage boundary;
+              // it was a valid SDK BrokerType when Mesh first returned it.
+              brokerType: connection.brokerType as IntegrationAccessToken['brokerType'],
+              brokerName: connection.brokerName,
+              accountId: connection.accountId,
+              accountName: connection.accountName,
+            },
+          ]
+        : undefined
 
-      // The payment flow re-authenticates against Coinbase itself; this app
-      // already has a saved connection from earlier, so a fresh one here is
-      // only logged, not stored.
-      onIntegrationConnected: (payload) => {
-        void postConsoleEvent('sdk_event', 'onIntegrationConnected (checkout)', payload, true)
-      },
+      linkRef.current = createLink({
+        renderType: 'overlay',
+        theme: 'system',
+        displayFiatCurrency: 'USD',
+        accessTokens,
 
-      onTransferFinished: (payload: TransferFinishedPayload) => {
-        void postConsoleEvent('sdk_event', 'onTransferFinished', payload, true)
-        const txHash = 'txHash' in payload ? payload.txHash : undefined
-        void fetch(`/api/orders/${oid}/transfer-finished`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ txHash }),
-        })
-      },
+        // Falls back to a fresh Coinbase login only if accessTokens above
+        // didn't cover it (e.g. no stored connection yet).
+        onIntegrationConnected: (payload) => {
+          void postConsoleEvent('sdk_event', 'onIntegrationConnected (checkout)', payload, true)
+        },
 
-      onExit: (exitError?: string, summary?: SessionSummary) => {
-        if (exitError) void postConsoleEvent('sdk_event', 'onExit (checkout)', { error: exitError, page: summary?.page }, false)
-        setBusy(false)
-      },
+        onTransferFinished: (payload: TransferFinishedPayload) => {
+          void postConsoleEvent('sdk_event', 'onTransferFinished', payload, true)
+          const txHash = 'txHash' in payload ? payload.txHash : undefined
+          void fetch(`/api/orders/${oid}/transfer-finished`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ txHash }),
+          })
+        },
 
-      onEvent: (ev) => {
-        void postConsoleEvent('sdk_event', ev.type, 'payload' in ev ? ev.payload : undefined, true)
-      },
-    })
+        onExit: (exitError?: string, summary?: SessionSummary) => {
+          if (exitError) void postConsoleEvent('sdk_event', 'onExit (checkout)', { error: exitError, page: summary?.page }, false)
+          setBusy(false)
+        },
 
-    linkRef.current.openLink(linkToken)
-  }, [])
+        onEvent: (ev) => {
+          void postConsoleEvent('sdk_event', ev.type, 'payload' in ev ? ev.payload : undefined, true)
+        },
+      })
+
+      linkRef.current.openLink(linkToken)
+    },
+    [connection],
+  )
 
   const checkout = useCallback(async () => {
     setBusy(true)
@@ -90,7 +114,7 @@ export function CartCheckoutButton({ disabled, onOrderCreated }: CartCheckoutBut
       <button
         onClick={checkout}
         disabled={busy || disabled}
-        className="w-full rounded-md bg-gray-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-40"
+        className="w-full rounded-full bg-[#14161a] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#27272a] disabled:opacity-40"
       >
         {busy ? 'Opening…' : 'Pay with Coinbase'}
       </button>

@@ -3,11 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createLink } from '@meshconnect/web-link-sdk'
 import type { Link, LinkPayload, SessionSummary } from '@meshconnect/web-link-sdk'
-
-interface StoredConnection {
-  brokerName: string
-  accountName: string
-}
+import type { StoredConnection } from '@/lib/store/connections'
 
 async function postConsoleEvent(kind: string, label: string, detail?: unknown, ok?: boolean) {
   await fetch('/api/console', {
@@ -121,14 +117,14 @@ export function ConnectCoinbaseButton({
     return (
       <div className="flex items-center gap-2 text-sm">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-        <span>
+        <span className="text-[#3f3f46]">
           {connection.brokerName} connected · {connection.accountName}
         </span>
         <button
           type="button"
           onClick={disconnect}
           disabled={disconnecting}
-          className="text-xs text-gray-500 underline underline-offset-2 hover:text-gray-900 disabled:opacity-50"
+          className="text-xs text-[#71717a] underline underline-offset-2 hover:text-[#14161a] disabled:opacity-50"
         >
           {disconnecting ? 'Disconnecting…' : 'Disconnect'}
         </button>
@@ -141,7 +137,7 @@ export function ConnectCoinbaseButton({
       <button
         onClick={open}
         disabled={busy}
-        className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700 disabled:opacity-50"
+        className="rounded-full bg-[#14161a] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#27272a] disabled:opacity-50"
       >
         {busy ? 'Opening Mesh Link…' : 'Connect Coinbase'}
       </button>

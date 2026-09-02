@@ -42,11 +42,11 @@ export function CartDrawer() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="relative rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+        className="relative rounded-full border border-[#d4d4d8] px-3.5 py-2 text-sm font-medium text-[#3f3f46] transition hover:border-[#a1a1aa]"
       >
         Cart
         {items.length > 0 && (
-          <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-xs text-white">
+          <span className="ml-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#14161a] text-xs text-white">
             {items.length}
           </span>
         )}
@@ -61,27 +61,27 @@ export function CartDrawer() {
             className="absolute inset-0 bg-black/30"
           />
           <div className="absolute inset-y-0 right-0 flex w-full max-w-sm flex-col bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-              <h2 className="text-sm font-semibold text-gray-900">Cart</h2>
-              <button type="button" onClick={() => setOpen(false)} className="text-sm text-gray-500 hover:text-gray-900">
+            <div className="flex items-center justify-between border-b border-[#e4e4e7] px-5 py-4">
+              <h2 className="font-display text-lg">Cart</h2>
+              <button type="button" onClick={() => setOpen(false)} className="text-sm text-[#71717a] hover:text-[#14161a]">
                 Close
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-4">
               {items.length === 0 ? (
-                <p className="text-sm text-gray-500">Your cart is empty.</p>
+                <p className="text-sm text-[#71717a]">Your cart is empty.</p>
               ) : (
-                <ul className="divide-y divide-gray-100">
+                <ul className="divide-y divide-[#f4f4f5]">
                   {items.map((item) => (
                     <li key={item.id} className="flex items-center justify-between py-3 text-sm">
                       <div>
-                        <p className="font-medium text-gray-900">{item.name}</p>
-                        <p className="text-gray-500">{item.colorway}</p>
+                        <p className="font-medium text-[#14161a]">{item.name}</p>
+                        <p className="text-[#71717a]">{item.colorway}</p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="tabular-nums text-gray-900">{currency.format(item.price)}</span>
-                        <button type="button" onClick={() => remove(item.id)} className="text-xs text-gray-400 hover:text-red-600">
+                        <span className="tabular text-[#14161a]">{currency.format(item.price)}</span>
+                        <button type="button" onClick={() => remove(item.id)} className="text-xs text-[#a1a1aa] hover:text-red-600">
                           Remove
                         </button>
                       </div>
@@ -92,19 +92,19 @@ export function CartDrawer() {
             </div>
 
             {activeOrderId ? (
-              <div className="border-t border-gray-200 px-5 py-4">
+              <div className="border-t border-[#e4e4e7] px-5 py-4">
                 <OrderStatusBadge orderId={activeOrderId} />
               </div>
             ) : (
               items.length > 0 && (
-                <div className="space-y-3 border-t border-gray-200 px-5 py-4">
+                <div className="space-y-3 border-t border-[#e4e4e7] px-5 py-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Total</span>
-                    <span className="font-semibold tabular-nums text-gray-900">{currency.format(total)}</span>
+                    <span className="text-[#71717a]">Total</span>
+                    <span className="tabular font-medium text-[#14161a]">{currency.format(total)}</span>
                   </div>
 
                   {connected && balance !== null && (
-                    <p className={`text-xs ${insufficientFunds ? 'text-red-600' : 'text-gray-500'}`}>
+                    <p className={`text-xs ${insufficientFunds ? 'text-red-600' : 'text-[#71717a]'}`}>
                       USDC balance: {balance.toLocaleString()}
                       {insufficientFunds && ' · insufficient for this order'}
                     </p>
@@ -119,7 +119,7 @@ export function CartDrawer() {
                       }}
                     />
                   ) : (
-                    <p className="text-xs text-gray-500">Connect Coinbase to check out.</p>
+                    <p className="text-xs text-[#71717a]">Connect Coinbase to check out.</p>
                   )}
                 </div>
               )

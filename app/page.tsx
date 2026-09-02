@@ -12,12 +12,12 @@ export default async function Home() {
   const connection = await getConnection(sessionId)
 
   return (
-    <ConnectionProvider initialConnected={connection !== null}>
+    <ConnectionProvider initialConnection={connection}>
       <CartProvider>
-        <div className="min-h-full bg-white pb-12 text-gray-900">
-          <header className="border-b border-gray-200">
-            <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-              <span className="text-lg font-semibold tracking-tight">Sole</span>
+        <div className="min-h-full bg-white pb-16 text-[#14161a]">
+          <header className="border-b border-[#e4e4e7]">
+            <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
+              <span className="font-display text-xl italic">Sole</span>
               <div className="flex items-center gap-4">
                 <WalletPanel initialConnection={connection} />
                 <CartDrawer />
@@ -25,10 +25,12 @@ export default async function Home() {
             </div>
           </header>
 
-          <main className="mx-auto max-w-5xl px-6 py-10">
-            <div className="mb-8">
-              <h1 className="text-2xl font-semibold tracking-tight">New arrivals</h1>
-              <p className="mt-1 text-sm text-gray-500">Pay in USDC from a connected Coinbase account.</p>
+          <main className="mx-auto max-w-5xl px-6 py-14">
+            <div className="mb-10 max-w-lg">
+              <h1 className="font-display text-4xl leading-none">New arrivals</h1>
+              <p className="mt-3 text-sm text-[#71717a]">
+                Pick a pair, pay in USDC from a connected Coinbase account, settled on Ethereum.
+              </p>
             </div>
             <ProductGrid />
           </main>
