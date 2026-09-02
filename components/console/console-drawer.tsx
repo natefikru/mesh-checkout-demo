@@ -52,14 +52,28 @@ export function ConsoleDrawer() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-800 bg-gray-950 text-gray-100">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-4 py-2 font-mono text-xs uppercase tracking-wide text-gray-400 hover:text-gray-200"
-      >
-        <span>Mesh activity{events.length > 0 && ` (${events.length})`}</span>
-        <span>{open ? 'Hide' : 'Show'}</span>
-      </button>
+      <div className="flex w-full items-center justify-between px-4 py-2 font-mono text-xs uppercase tracking-wide text-gray-400">
+        <button type="button" onClick={() => setOpen((v) => !v)} className="hover:text-gray-200">
+          Mesh activity{events.length > 0 && ` (${events.length})`}
+        </button>
+        <div className="flex items-center gap-4">
+          {open && events.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setEvents([])
+                setExpandedId(null)
+              }}
+              className="hover:text-gray-200"
+            >
+              Clear
+            </button>
+          )}
+          <button type="button" onClick={() => setOpen((v) => !v)} className="hover:text-gray-200">
+            {open ? 'Hide' : 'Show'}
+          </button>
+        </div>
+      </div>
 
       {open && (
         <div className="max-h-64 overflow-y-auto border-t border-gray-800 font-mono text-xs">
