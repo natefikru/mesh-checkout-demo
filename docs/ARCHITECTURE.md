@@ -27,3 +27,17 @@ The webhook (`app/api/mesh/webhook/route.ts`) is the only path to `paid`. It's v
 ## Console drawer
 
 The resizable drawer at the bottom of the page streams every Mesh API call, SDK event, and webhook delivery for the current session in one interleaved timeline, polling `/api/console`. It's the same logging infrastructure the app uses internally (the redaction in `lib/mesh/client.ts` feeds it directly), exposed as a live panel for the demo.
+
+## Fee quote and Mesh's own transfer record
+
+Two Mesh endpoints outside the required flow, both wired into the cart drawer.
+
+`POST /api/v1/transfers/managed/quote` shows an estimated network fee before checkout, over the same fixed token, network, and address the order will actually use. `brokerType` is hard-coded to the production value (`lib/mesh/quote.ts`): confirmed live against sandbox that the connection's own stored `brokerType` (`sandboxCoinbase`) gets a `400: "Broker SandboxCoinbase not supported"` on this specific endpoint, while `coinbase` succeeds even in the sandbox environment. Display-only; checkout's existing `verify` call is the real gate, so a failed quote fetch is silently swallowed rather than blocking anything.
+
+`GET /api/v1/transfers/managed/mesh` (`lib/mesh/transfers.ts`) is Mesh's own record of a transfer, looked up by the order id sent as `transferOptions.transactionId` when the payment link token is minted, confirmed live to come back as `clientTransactionId` on the real transfer. Shown next to the app's own order status in `MeshTransferRecord`, so the pairing, "what my app recorded" against "what Mesh's API says happened", is visible without narration. It polls through a `pending` record rather than stopping on first sight, since Mesh creates the record immediately and updates its status as the transfer processes; stopping early would freeze the display on "Pending" even after the transfer actually settles.
+
+## Connection revocation and expiry
+
+Disconnect (`app/api/mesh/connections/route.ts`) calls Mesh's `DELETE /api/v1/account` with the stored `tokenId` as `authToken` before clearing the local record, so disconnecting in the app actually revokes the token on Mesh's side rather than just forgetting about it locally. Best-effort: a failed revoke still clears local state, logged to the console panel, so a flaky call can't strand the UI in a stuck "connected" state.
+
+The inverse case matters too: a sandbox token can expire or get revoked outside this app, and Mesh then rejects it with `errorType: "unauthorizedToken"`. Both the portfolio route and the checkout route detect this specifically (`isUnauthorizedTokenError` in `lib/mesh/client.ts`), clear the now-dead local connection, and return `reconnectRequired: true`. The client (portfolio panel, wallet panel, cart drawer, checkout) resets to a disconnected state on that signal, so a stale token surfaces as "reconnect Coinbase" instead of every subsequent request silently 400ing forever with the UI still claiming to be connected.

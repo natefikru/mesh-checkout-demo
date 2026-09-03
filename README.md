@@ -14,7 +14,7 @@ A sneaker storefront that connects Coinbase through [Mesh Connect](https://meshc
 | 4 | Launch Link, connect Coinbase | `connect-coinbase-button.tsx`, `link-token/route.ts` | `integrationId` is resolved at runtime from `/api/v1/integrations` and locked to Coinbase's sandbox id, so Link skips Mesh's provider catalog entirely |
 | 5 | Pay in USDC over Ethereum via Link UI | `cart-checkout-button.tsx`, `orders/route.ts` | Checkout pre-flights the token, network, and address against `/api/v1/transfers/managed/verify`, then mints a payment link token with the order id as `transferOptions.transactionId`, used as a correlation key since Mesh's API has no idempotency header |
 | 6 | Read portfolio via accessToken | `mesh/portfolio/route.ts`, `lib/mesh/portfolio.ts` | Three parallel server-side reads: `holdings/get`, `holdings/value`, `balance/get`. The token never reaches the browser |
-| 7 | Bonus creativity | See Architecture below | Balance-aware checkout, live console drawer, return-user reconnect, atomic settlement |
+| 7 | Bonus creativity | See Architecture below | Balance-aware checkout, fee quote before paying, live console drawer, return-user reconnect, atomic settlement, Mesh's own transfer record shown next to the app's order status, expired-connection auto-recovery |
 
 ## Architecture, briefly
 
@@ -25,6 +25,9 @@ A sneaker storefront that connects Coinbase through [Mesh Connect](https://meshc
 - Stores Mesh's `tokenId`, not the raw `accessToken`, which is what makes the return-user reconnect (skip re-login on repeat checkout) possible.
 - Settlement is webhook-driven, not client-driven, with an atomic Redis Lua transition closing a real race between the webhook and the SDK callback.
 - A resizable console drawer streams every Mesh API call, SDK event, and webhook delivery live, for the demo and for debugging.
+- Before checkout, `POST /api/v1/transfers/managed/quote` shows an estimated network fee against the exact token, network, and address the order will use, using Mesh's production `brokerType` even in sandbox (confirmed live: the connection's own stored `sandboxCoinbase` value 400s on this endpoint).
+- Once an order settles, `GET /api/v1/transfers/managed/mesh` shows Mesh's own transfer record next to the app's local order status, pairing "what my app recorded" against "what Mesh's API says happened."
+- Disconnect calls Mesh's `DELETE /api/v1/account` to revoke the token, not just clear the local record. And if Mesh ever rejects a stored token as unauthorized (rotation, expiry), the app clears the stale connection and prompts reconnect instead of silently failing every request.
 
 Reasoning behind each of these lives in [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
 
