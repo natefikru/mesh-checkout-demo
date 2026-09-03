@@ -31,7 +31,14 @@ export function WalletPanel({ initialConnection }: { initialConnection: StoredCo
       )}
       {connected && expanded && (
         <div className="absolute right-0 top-full z-10 mt-3 w-72 rounded-lg border border-[#e4e4e7] bg-white p-4 shadow-lg">
-          <PortfolioPanel connected={connected} refreshKey={refreshKey} />
+          <PortfolioPanel
+            connected={connected}
+            refreshKey={refreshKey}
+            onExpired={() => {
+              markDisconnected()
+              setExpanded(false)
+            }}
+          />
         </div>
       )}
     </div>

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSessionId } from '@/lib/session'
-import { getConnection } from '@/lib/store/connections'
+import { getConnection, deleteConnection } from '@/lib/store/connections'
 import { readPortfolio } from '@/lib/mesh/portfolio'
-import { MeshApiError } from '@/lib/mesh/client'
+import { MeshApiError, isUnauthorizedTokenError } from '@/lib/mesh/client'
 
 export async function GET() {
   const sessionId = await getSessionId()
@@ -16,6 +16,13 @@ export async function GET() {
     const portfolio = await readPortfolio(connection, sessionId)
     return NextResponse.json(portfolio)
   } catch (error) {
+    if (isUnauthorizedTokenError(error)) {
+      // Mesh no longer honors this token (rotated, expired, or revoked
+      // outside this app). Clear it here instead of leaving the app stuck
+      // showing "connected" forever while every portfolio read 400s.
+      await deleteConnection(sessionId)
+      return NextResponse.json({ error: 'Coinbase connection expired. Reconnect to continue.', reconnectRequired: true }, { status: 401 })
+    }
     if (error instanceof MeshApiError) {
       return NextResponse.json({ error: error.displayMessage ?? error.message }, { status: error.status === 200 ? 400 : error.status })
     }

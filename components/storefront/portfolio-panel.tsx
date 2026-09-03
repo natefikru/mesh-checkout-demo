@@ -14,7 +14,15 @@ const quantity = new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 })
  * is derived from a stale/absent tag rather than set with an imperative
  * setState at the top of the effect.
  */
-export function PortfolioPanel({ connected, refreshKey }: { connected: boolean; refreshKey: number }) {
+export function PortfolioPanel({
+  connected,
+  refreshKey,
+  onExpired,
+}: {
+  connected: boolean
+  refreshKey: number
+  onExpired?: () => void
+}) {
   const [loaded, setLoaded] = useState<{ key: number; result: FetchResult } | null>(null)
 
   useEffect(() => {
@@ -23,8 +31,12 @@ export function PortfolioPanel({ connected, refreshKey }: { connected: boolean; 
 
     fetch('/api/mesh/portfolio')
       .then(async (res) => {
-        const data = (await res.json()) as Portfolio & { error?: string }
+        const data = (await res.json()) as Portfolio & { error?: string; reconnectRequired?: boolean }
         if (cancelled) return
+        if (data.reconnectRequired) {
+          onExpired?.()
+          return
+        }
         setLoaded({
           key: refreshKey,
           result: res.ok ? { status: 'ready', portfolio: data } : { status: 'error', message: data.error ?? 'Could not read the portfolio' },
@@ -37,7 +49,7 @@ export function PortfolioPanel({ connected, refreshKey }: { connected: boolean; 
     return () => {
       cancelled = true
     }
-  }, [connected, refreshKey])
+  }, [connected, refreshKey, onExpired])
 
   if (!connected) return null
 

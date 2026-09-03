@@ -14,7 +14,7 @@ const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: '
 export function CartDrawer() {
   const [open, setOpen] = useState(false)
   const { items, total, remove, clear, activeOrderId, setActiveOrderId } = useCart()
-  const { connected } = useConnection()
+  const { connected, markDisconnected } = useConnection()
   const [balance, setBalance] = useState<number | null>(null)
   const [quote, setQuote] = useState<{ total: number; content: QuoteResponseContent } | null>(null)
 
@@ -24,8 +24,13 @@ export function CartDrawer() {
 
     fetch('/api/mesh/portfolio')
       .then((res) => res.json())
-      .then((data: Portfolio & { error?: string }) => {
-        if (cancelled || !data.holdings) return
+      .then((data: Portfolio & { error?: string; reconnectRequired?: boolean }) => {
+        if (cancelled) return
+        if (data.reconnectRequired) {
+          markDisconnected()
+          return
+        }
+        if (!data.holdings) return
         const usdc = data.holdings.cryptocurrencyPositions.find((p) => p.symbol === 'USDC')
         setBalance(usdc?.amount ?? 0)
       })
@@ -36,7 +41,7 @@ export function CartDrawer() {
     return () => {
       cancelled = true
     }
-  }, [open, connected])
+  }, [open, connected, markDisconnected])
 
   useEffect(() => {
     if (!open || !connected || total <= 0) return

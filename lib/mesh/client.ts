@@ -17,6 +17,16 @@ export class MeshApiError extends Error {
   }
 }
 
+/**
+ * A stored tokenId Mesh no longer honors: rotated, expired, or revoked on
+ * Mesh's side without this app knowing. Distinct from every other
+ * MeshApiError because the fix isn't "retry" or "show the error", it's
+ * "this connection is dead, clear it and ask the user to reconnect."
+ */
+export function isUnauthorizedTokenError(error: unknown): error is MeshApiError {
+  return error instanceof MeshApiError && error.errorType === 'unauthorizedToken'
+}
+
 interface CallMeshOptions {
   /** Groups this call in the console panel; typically the session's userId. */
   sessionId?: string

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { getSessionId } from '@/lib/session'
-import { getConnection } from '@/lib/store/connections'
+import { getConnection, deleteConnection } from '@/lib/store/connections'
 import { createOrder } from '@/lib/store/orders'
 import type { Order } from '@/lib/store/orders'
 import { getProduct } from '@/lib/catalog'
@@ -9,7 +9,7 @@ import type { Product } from '@/lib/catalog'
 import { readPortfolio, usdcBalance } from '@/lib/mesh/portfolio'
 import { resolveCoinbaseIntegrationId } from '@/lib/mesh/integrations'
 import { verifyTransfer } from '@/lib/mesh/verify'
-import { callMesh, MeshApiError } from '@/lib/mesh/client'
+import { callMesh, MeshApiError, isUnauthorizedTokenError } from '@/lib/mesh/client'
 import { ETHEREUM_NETWORK_ID, TEST_WALLET_ADDRESS, USDC_SYMBOL } from '@/lib/mesh/constants'
 import type { GetLinkTokenRequest, GetLinkTokenResponseContent } from '@/lib/mesh/types'
 
@@ -94,6 +94,14 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ orderId: order.id, linkToken: content.linkToken })
   } catch (error) {
+    if (isUnauthorizedTokenError(error)) {
+      // Same stale-token case as the portfolio route: the balance check or
+      // verify call above hit a token Mesh no longer honors. Clear it so
+      // the shopper gets a clean "reconnect" path instead of a checkout
+      // that fails the same way on every retry.
+      await deleteConnection(sessionId)
+      return NextResponse.json({ error: 'Coinbase connection expired. Reconnect to continue.', reconnectRequired: true }, { status: 401 })
+    }
     if (error instanceof MeshApiError) {
       return NextResponse.json({ error: error.displayMessage ?? error.message }, { status: error.status === 200 ? 400 : error.status })
     }

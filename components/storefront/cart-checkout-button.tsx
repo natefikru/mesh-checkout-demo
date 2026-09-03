@@ -23,7 +23,7 @@ interface CartCheckoutButtonProps {
 
 export function CartCheckoutButton({ disabled, onOrderCreated }: CartCheckoutButtonProps) {
   const { productIds } = useCart()
-  const { connection } = useConnection()
+  const { connection, markDisconnected } = useConnection()
   const linkRef = useRef<Link | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -95,8 +95,9 @@ export function CartCheckoutButton({ disabled, onOrderCreated }: CartCheckoutBut
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productIds }),
       })
-      const data = (await res.json()) as { orderId?: string; linkToken?: string; error?: string }
+      const data = (await res.json()) as { orderId?: string; linkToken?: string; error?: string; reconnectRequired?: boolean }
       if (!res.ok || !data.orderId || !data.linkToken) {
+        if (data.reconnectRequired) markDisconnected()
         setError(data.error ?? 'Could not start checkout')
         setBusy(false)
         return
@@ -107,7 +108,7 @@ export function CartCheckoutButton({ disabled, onOrderCreated }: CartCheckoutBut
       setError('Could not reach the server')
       setBusy(false)
     }
-  }, [productIds, openLinkFor, onOrderCreated])
+  }, [productIds, openLinkFor, onOrderCreated, markDisconnected])
 
   return (
     <div className="space-y-1">
