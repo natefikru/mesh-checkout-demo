@@ -5,7 +5,9 @@ import { useCart } from '@/components/storefront/cart-context'
 import { useConnection } from '@/components/storefront/connection-context'
 import { CartCheckoutButton } from '@/components/storefront/cart-checkout-loader'
 import { OrderStatusBadge } from '@/components/storefront/order-status'
+import { MeshTransferRecord } from '@/components/storefront/mesh-transfer-record'
 import type { Portfolio } from '@/lib/mesh/portfolio'
+import type { QuoteResponseContent } from '@/lib/mesh/types'
 
 const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 
@@ -14,6 +16,7 @@ export function CartDrawer() {
   const { items, total, remove, clear, activeOrderId, setActiveOrderId } = useCart()
   const { connected } = useConnection()
   const [balance, setBalance] = useState<number | null>(null)
+  const [quote, setQuote] = useState<{ total: number; content: QuoteResponseContent } | null>(null)
 
   useEffect(() => {
     if (!open || !connected) return
@@ -34,6 +37,28 @@ export function CartDrawer() {
       cancelled = true
     }
   }, [open, connected])
+
+  useEffect(() => {
+    if (!open || !connected || total <= 0) return
+    let cancelled = false
+
+    fetch('/api/mesh/quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amountInFiat: total }),
+    })
+      .then((res) => res.json())
+      .then((data: { quote?: QuoteResponseContent }) => {
+        if (!cancelled && data.quote) setQuote({ total, content: data.quote })
+      })
+      .catch(() => {
+        /* fee preview is best-effort display only; checkout's own verify call is the real gate */
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, connected, total])
 
   const insufficientFunds = connected && balance !== null && balance < total
 
@@ -92,8 +117,9 @@ export function CartDrawer() {
             </div>
 
             {activeOrderId ? (
-              <div className="border-t border-[#e4e4e7] px-5 py-4">
+              <div className="space-y-1 border-t border-[#e4e4e7] px-5 py-4">
                 <OrderStatusBadge orderId={activeOrderId} />
+                <MeshTransferRecord orderId={activeOrderId} />
               </div>
             ) : (
               items.length > 0 && (
@@ -107,6 +133,14 @@ export function CartDrawer() {
                     <p className={`text-xs ${insufficientFunds ? 'text-red-600' : 'text-[#71717a]'}`}>
                       USDC balance: {balance.toLocaleString()}
                       {insufficientFunds && ' · insufficient for this order'}
+                    </p>
+                  )}
+
+                  {quote && quote.total === total && (
+                    <p className="text-xs text-[#71717a]">
+                      Est. network fee: {currency.format(quote.content.fees.inFiat.minFeesFiat)}
+                      {quote.content.fees.inFiat.maxFeesFiat !== quote.content.fees.inFiat.minFeesFiat &&
+                        `–${currency.format(quote.content.fees.inFiat.maxFeesFiat)}`}
                     </p>
                   )}
 

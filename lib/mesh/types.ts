@@ -138,3 +138,41 @@ export interface TransferVerificationRequest {
   networkId: string
   targetAddress: string
 }
+
+/** Mesh's own record of a transfer, not this app's. Only the fields the UI displays. */
+export interface TransferModel {
+  id: string
+  clientTransactionId: string | null
+  status: 'pending' | 'succeeded' | 'failed'
+  hash: string | null
+  infoUrl: string | null
+  amountInFiat: number
+  symbol: string | null
+  networkName: string | null
+}
+
+export interface GetMeshTransfersResponseContent {
+  items: TransferModel[]
+  total: number
+  hasMorePages: boolean
+}
+
+export interface QuoteRequest {
+  amountInFiat: number
+  fiatCurrency: string
+  symbol: string
+  networkId: string
+  toAddress: string
+  brokerType: BrokerType
+}
+
+interface QuoteFees {
+  networkFeeFiat: number
+  minFeesFiat: number
+  maxFeesFiat: number
+}
+
+export interface QuoteResponseContent {
+  isEligible: boolean
+  fees: { inFiat: QuoteFees }
+}
