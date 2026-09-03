@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSessionId } from '@/lib/session'
 import { getConnection, saveConnection, deleteConnection } from '@/lib/store/connections'
 import { appendConsoleEvent } from '@/lib/console/store'
+import { callMesh, MeshApiError } from '@/lib/mesh/client'
 import type { StoredConnection } from '@/lib/store/connections'
 
 export async function GET() {
@@ -61,6 +62,28 @@ export async function POST(req: Request) {
 
 export async function DELETE() {
   const sessionId = await getSessionId()
+  const connection = await getConnection(sessionId)
+
+  if (connection) {
+    try {
+      await callMesh('DELETE', '/api/v1/account', {
+        sessionId,
+        body: { authToken: connection.tokenId, type: connection.brokerType },
+      })
+    } catch (err) {
+      // Revoking on Mesh's side is best-effort: a stale sandbox token or a
+      // connection Mesh already dropped shouldn't block clearing our own
+      // record, but a real failure is worth having in the console log.
+      await appendConsoleEvent({
+        sessionId,
+        kind: 'mesh_request',
+        label: 'DELETE /api/v1/account failed',
+        detail: err instanceof MeshApiError ? { message: err.message, status: err.status } : { error: String(err) },
+        ok: false,
+      })
+    }
+  }
+
   await deleteConnection(sessionId)
   return NextResponse.json({ ok: true })
 }
